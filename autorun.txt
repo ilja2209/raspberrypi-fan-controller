@@ -1,0 +1,9 @@
+Add to autorun:
+1. Wrtie script
+#!/bin/sh
+
+nohup /etc/init.d/cfand &
+
+2. put it together executable file to /etc/init.d/cfand
+3. Make link: sudo ln -s /etc/init.d/cfand /etc/rc2.d/S99cfand
+4. reboot
