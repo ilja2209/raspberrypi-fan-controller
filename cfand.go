@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
+	"pidctrl"
 	"strconv"
 	"strings"
 	"time"
@@ -14,9 +14,28 @@ import (
 )
 
 const defaltFanPin = 12
-const defaultSleepTime = "2s"
-const defaultLowTempTreshold = 40.0  //Celsius
-const defaultHighTempTreshold = 50.0 //Celsius
+const defaultSleepTime = "1s"
+const defaultLowTempTreshold = 40.0     // Celsius
+const defaultHighTempTreshold = 50.0    // Celsius
+const defaultSetPointTemperature = 45.0 // Celsius
+const maxSpeed = 255.0
+const baseFreq = 38000 // Hz
+const minOutputLimit = -10
+const maxOutputLimit = 10
+const pCoef = 0.5
+const iCoef = 0.5
+const dCoef = 0.5
+
+// For raspberry PI 4 only
+var pinsWithPWM = map[int]bool{
+	12: true,
+	13: true,
+	18: true,
+	19: true,
+	40: true,
+	41: true,
+	45: true,
+}
 
 func getCPUTemp() float64 {
 	cmd := exec.Command("cat", "/sys/class/thermal/thermal_zone0/temp")
@@ -33,13 +52,16 @@ func getCPUTemp() float64 {
 	}
 }
 
-func switchFan(pinNumber int, isOn bool) {
+func getPin(pinNumber int) rpio.Pin {
 	if err := rpio.Open(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	pin := rpio.Pin(pinNumber)
+	return rpio.Pin(pinNumber)
+}
+
+func switchFan(pinNumber int, isOn bool) {
+	pin := getPin(pinNumber)
 	pin.Output()
 	if isOn {
 		pin.High()
@@ -47,6 +69,37 @@ func switchFan(pinNumber int, isOn bool) {
 		pin.Low()
 	}
 	rpio.Close()
+}
+
+func setFanSpeed(pinNumber int, speed float64) {
+	// fmt.Println("  V = ", speed)
+	pin := getPin(pinNumber)
+	pin.Pwm()
+	pin.DutyCycle(uint32(speed), uint32(maxSpeed))
+	pin.Freq(baseFreq * int(maxSpeed))
+}
+
+func fanPulseController(currentTemp float64, lowTempTreshold float64, highTempTreshold float64, pinNumber int) {
+	if currentTemp < lowTempTreshold {
+		switchFan(pinNumber, false)
+	}
+
+	if currentTemp > highTempTreshold {
+		switchFan(pinNumber, true)
+	}
+}
+
+func initPIDController(setTemp float64) *pidctrl.PIDController {
+	pidController := pidctrl.NewPIDController(pCoef, iCoef, dCoef)
+	pidController.Set(setTemp)
+	pidController.SetOutputLimits(minOutputLimit, maxOutputLimit)
+	return pidController
+}
+
+func fanPIDController(pidController *pidctrl.PIDController, currentTemp float64, pinNumber int) {
+	y := pidController.UpdateDuration(currentTemp, time.Second)
+	speed := -(y - 10) * 12.75 // scale [-10; 10] to [0; 255]
+	setFanSpeed(pinNumber, speed)
 }
 
 func main() {
@@ -57,26 +110,37 @@ func main() {
 		return
 	}
 
-	var lowTempTreshold = *flag.Float64("low-temp-treshold", defaultLowTempTreshold, "This parameter sets low tmperature treshold when the fan is switched off")
-	var highTempTreshold = *flag.Float64("high-temp-treshold", defaultHighTempTreshold, "This parameter sets high tmperature treshold when the fan is switched on")
-	var pinNumber = *flag.Int("pin", defaltFanPin, "This parameter sets a pin of raspberry pi to which the fan is connected")
+	var setPointTemperature = flag.Float64("setpoint-temperature", defaultSetPointTemperature, "This parameter sets target value for CPU temperature")
+	var lowTempTreshold = flag.Float64("low-temp-treshold", defaultLowTempTreshold, "This parameter sets low tmperature treshold when the fan is switched off")
+	var highTempTreshold = flag.Float64("high-temp-treshold", defaultHighTempTreshold, "This parameter sets high tmperature treshold when the fan is switched on")
+	var pinNumber = flag.Int("pin", defaltFanPin, "This parameter sets a pin of raspberry pi to which the fan is connected")
 	flag.Parse()
 
 	sleepTime, err := time.ParseDuration(defaultSleepTime)
 	if err != nil {
 		panic(err)
 	}
+
+	// fmt.Println("Setpoint", *setPointTemperature)
+
+	pidController := initPIDController(*setPointTemperature)
+
+	isPID := pinsWithPWM[*pinNumber]
+
 	fmt.Println("CPU fan controller is running")
+
 	for {
 		net.Listen("unix", "@/tmp/cfand")
+
 		temp := getCPUTemp()
-		if temp < lowTempTreshold {
-			switchFan(pinNumber, false)
+		// fmt.Print("T = ", temp)
+
+		if isPID {
+			fanPIDController(pidController, temp, *pinNumber)
+		} else {
+			fanPulseController(temp, *lowTempTreshold, *highTempTreshold, *pinNumber)
 		}
 
-		if temp > highTempTreshold {
-			switchFan(pinNumber, true)
-		}
 		time.Sleep(sleepTime)
 	}
 }
