@@ -1,4 +1,4 @@
-# Fan controller for Raspberry Pi 4 with PWM support
+# Fan controller for Raspberry Pi 4 with PID controller support
 The sipliest fan controller which can be run on your raspberry pi to control CPU temperature. It uses simple logic:
 
 The application can be run with several parameters:
