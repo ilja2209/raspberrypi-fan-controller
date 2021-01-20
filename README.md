@@ -1,5 +1,7 @@
-# Fan controller for Raspberry Pi 4 with PID controller support
-The sipliest fan controller which can be run on your raspberry pi to control CPU temperature. It uses simple logic:
+# Fan controller for Raspberry Pi 4 based on PID regulator
+The sipliest fan controller which can be run on your raspberry pi to control CPU temperature. 
+It can use PID regulator to ajust CPU temperature more precisely. It can also dramatically reduce noise of the CPU fan (Depends on settings).
+To use PID regulator you need to connect your fan to 12 pin (or to any of 13, 18, 19, 40, 41, 45 pins) and set temperature 
 
 The application can be run with several parameters:
 ```
