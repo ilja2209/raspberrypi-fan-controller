@@ -28,4 +28,4 @@ To download the application and add to autorun follow the next steps (for Ubuntu
 ```
 
 The fan can be connected to raspberry pi 4 using the next circuit:
-![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
+![alt text](https://github.com/ilja2209/raspberrypi-fan-controller/raw/main/Fan%20controller%20circuit.png?raw=true)
