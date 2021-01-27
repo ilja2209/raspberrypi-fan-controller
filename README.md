@@ -26,3 +26,6 @@ To download the application and add to autorun follow the next steps (for Ubuntu
 6. Reboot your raspberry pi
 7. Enjoy
 ```
+
+The fan can be connected to raspberry pi 4 using the next circuit:
+![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
