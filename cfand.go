@@ -111,8 +111,8 @@ func main() {
 	}
 
 	var setPointTemperature = flag.Float64("setpoint-temperature", defaultSetPointTemperature, "This parameter sets target value of CPU temperature")
-	var lowTempTreshold = flag.Float64("low-temp-treshold", defaultLowTempTreshold, "This parameter sets low tmperature treshold when the fan is switched off")
-	var highTempTreshold = flag.Float64("high-temp-treshold", defaultHighTempTreshold, "This parameter sets high tmperature treshold when the fan is switched on")
+	var lowTempTreshold = flag.Float64("low-temp-threshold", defaultLowTempTreshold, "This parameter sets low temperature threshold when the fan is switched off")
+	var highTempTreshold = flag.Float64("high-temp-threshold", defaultHighTempTreshold, "This parameter sets high temperature threshold when the fan is switched on")
 	var pinNumber = flag.Int("pin", defaltFanPin, "This parameter sets a pin of raspberry pi to which the fan is connected")
 	flag.Parse()
 
