@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
 	"os/exec"
-	"pidctrl"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ilja2209/cfand/pidctrl"
 
 	"github.com/stianeikeland/go-rpio"
 )
@@ -103,12 +103,7 @@ func fanPIDController(pidController *pidctrl.PIDController, currentTemp float64,
 }
 
 func main() {
-
-	if _, err := net.Listen("unix", "@/tmp/cfand"); err != nil {
-		fmt.Println("CPU fan controller was already running")
-		fmt.Println("CPU temperature is: ", getCPUTemp())
-		return
-	}
+	fmt.Println("CPU temperature is: ", getCPUTemp())
 
 	var setPointTemperature = flag.Float64("setpoint-temperature", defaultSetPointTemperature, "This parameter sets target value of CPU temperature")
 	var lowTempTreshold = flag.Float64("low-temp-threshold", defaultLowTempTreshold, "This parameter sets low temperature threshold when the fan is switched off")
@@ -130,8 +125,6 @@ func main() {
 	fmt.Println("CPU fan controller is running")
 
 	for {
-		net.Listen("unix", "@/tmp/cfand")
-
 		temp := getCPUTemp()
 		// fmt.Print("T = ", temp)
 
